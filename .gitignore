@@ -1,0 +1,4 @@
+node_modules/
+*.log
+full-scan-output.txt
+.DS_Store

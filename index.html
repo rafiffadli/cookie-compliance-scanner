@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Site</title>
+</head>
+<body>
+  <h1>Fake Test Site</h1>
+  <p>This page simulates a site with a consent banner and trackers.</p>
+
+  <!-- Simulated tracker that fires immediately, BEFORE consent -->
+  <script>
+    document.cookie = "pre_consent_tracker=abc123; path=/";
+    fetch('https://example.com/track?event=page_load_before_consent').catch(() => {});
+  </script>
+
+  <!-- Fake consent banner -->
+  <div id="consent-banner" style="position:fixed;bottom:0;background:#eee;padding:20px;width:100%;">
+    <p>We use cookies. <button id="accept-btn">Accept</button></p>
+  </div>
+
+  <script>
+    document.getElementById('accept-btn').addEventListener('click', () => {
+      // This only fires AFTER the user clicks Accept
+      document.cookie = "post_consent_tracker=xyz789; path=/";
+      fetch('https://example.com/track?event=page_load_after_consent').catch(() => {});
+      document.getElementById('consent-banner').style.display = 'none';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cookie Compliance Scanner</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
+    input { width: 70%; padding: 8px; font-size: 14px; }
+    button { padding: 8px 16px; font-size: 14px; cursor: pointer; }
+    #status { margin-top: 12px; color: #666; }
+    #results { margin-top: 24px; display: none; }
+    .risk-high { color: #c0392b; font-weight: bold; }
+    .risk-medium { color: #d68910; font-weight: bold; }
+    .risk-none { color: #27ae60; font-weight: bold; }
+    .finding { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
+    #downloadButtons { margin-top: 16px; display: none; }
+    #downloadButtons button { margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Cookie Compliance Scanner</h1>
+  <p>Enter a URL to scan for trackers firing before consent.</p>
+
+  <input type="text" id="urlInput" placeholder="https://example.com" />
+  <button id="scanButton">Scan</button>
+
+  <div id="status"></div>
+
+  <div id="results">
+    <h2>Results</h2>
+    <p><strong>URL:</strong> <span id="resultUrl"></span></p>
+    <p><strong>Consent mechanism found:</strong> <span id="resultConsent"></span></p>
+    <p><strong>Risk level:</strong> <span id="resultRisk"></span></p>
+    <div id="consentWarning" style="display:none; background:#fff3cd; border:1px solid #ffc107; padding:10px; border-radius:4px; margin-top:8px; font-size:13px;"></div>
+
+    <h3>Findings</h3>
+    <div id="findingsList"></div>
+
+    <div id="downloadButtons">
+      <button id="downloadCsv">Download CSV</button>
+      <button id="downloadJson">Download JSON</button>
+      <button id="downloadPdf">Download PDF</button>
+    </div>
+  </div>
+
+  <script>
+    let lastScanResult = null;
+
+    document.getElementById('scanButton').addEventListener('click', async () => {
+      const url = document.getElementById('urlInput').value.trim();
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+
+      if (!url) {
+        status.textContent = 'Please enter a URL.';
+        return;
+      }
+
+      status.textContent = 'Scanning... this can take 10-20 seconds.';
+      results.style.display = 'none';
+
+      try {
+        const response = await fetch('http://localhost:4000/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || 'Scan failed');
+        }
+
+        const data = await response.json();
+        lastScanResult = data;
+        renderResults(data);
+        status.textContent = 'Scan complete.';
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`;
+      }
+    });
+
+    function renderResults(data) {
+      document.getElementById('resultUrl').textContent = data.url;
+      document.getElementById('resultConsent').textContent = data.consentMechanism.found
+        ? `Yes (${data.consentMechanism.method})`
+        : 'No';
+
+      const riskEl = document.getElementById('resultRisk');
+      riskEl.textContent = data.summary.riskLevel;
+      riskEl.className = `risk-${data.summary.riskLevel}`;
+
+      const warningEl = document.getElementById('consentWarning');
+      if (data.consentNote) {
+        warningEl.textContent = data.consentNote;
+        warningEl.style.display = 'block';
+      } else {
+        warningEl.style.display = 'none';
+      }
+
+      const findingsList = document.getElementById('findingsList');
+      findingsList.innerHTML = '';
+
+      if (data.findings.length === 0) {
+        findingsList.innerHTML = '<p>No compliance-relevant trackers detected before consent.</p>';
+      } else {
+        data.findings.forEach((f) => {
+          const div = document.createElement('div');
+          div.className = 'finding';
+          div.innerHTML = `<strong>${f.company}</strong> (${f.category}) — ${f.domain} — fired ${f.requestCount}x before consent`;
+          findingsList.appendChild(div);
+        });
+      }
+
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('downloadButtons').style.display = 'block';
+    }
+
+    document.getElementById('downloadCsv').addEventListener('click', () => {
+      if (!lastScanResult) return;
+
+      let csv = '';
+      if (lastScanResult.consentNote) {
+        csv += 'Note: ' + lastScanResult.consentNote.replace(/,/g, ';') + '\n\n';
+      }
+      csv += 'Domain,Company,Category,RequestCount,FiredBeforeConsent\n';
+      lastScanResult.findings.forEach((f) => {
+        csv += `${f.domain},${f.company},${f.category},${f.requestCount},${f.firedBeforeConsent}\n`;
+      });
+
+      downloadFile(csv, 'scan-report.csv', 'text/csv');
+    });
+
+    document.getElementById('downloadJson').addEventListener('click', () => {
+      if (!lastScanResult) return;
+      downloadFile(JSON.stringify(lastScanResult, null, 2), 'scan-report.json', 'application/json');
+    });
+
+    function downloadFile(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('downloadPdf').addEventListener('click', () => {
+      if (!lastScanResult) return;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const data = lastScanResult;
+      let y = 20;
+
+      doc.setFontSize(18);
+      doc.text('Cookie Compliance Scan Report', 14, y);
+      y += 10;
+
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Scanned: ' + new Date(data.scannedAt).toLocaleString(), 14, y);
+      y += 6;
+      doc.text('URL: ' + data.url, 14, y);
+      y += 12;
+
+      doc.setFontSize(12);
+      doc.setTextColor(0);
+      doc.text('Consent mechanism found: ' + (data.consentMechanism.found ? 'Yes' : 'No'), 14, y);
+      y += 7;
+      doc.text('Risk level: ' + data.summary.riskLevel.toUpperCase(), 14, y);
+      y += 8;
+
+      if (data.consentNote) {
+        doc.setFontSize(9);
+        doc.setTextColor(150, 100, 0);
+        const noteLines = doc.splitTextToSize('Note: ' + data.consentNote, 180);
+        doc.text(noteLines, 14, y);
+        y += (noteLines.length * 5) + 6;
+        doc.setTextColor(0);
+      } else {
+        y += 4;
+      }
+
+      doc.setFontSize(14);
+      doc.text('Findings', 14, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      if (data.findings.length === 0) {
+        doc.text('No compliance-relevant trackers detected before consent.', 14, y);
+        y += 6;
+      } else {
+        data.findings.forEach((f) => {
+          doc.text(f.company + ' (' + f.category + ') - ' + f.domain + ' - fired ' + f.requestCount + 'x before consent', 14, y);
+          y += 6;
+        });
+      }
+
+      y += 8;
+      doc.setFontSize(14);
+      doc.text('Pre-consent Cookies', 14, y);
+      y += 8;
+
+      doc.setFontSize(10);
+      const cookieText = data.preConsentCookies.length > 0
+        ? data.preConsentCookies.join(', ')
+        : 'None';
+      const cookieLines = doc.splitTextToSize(cookieText, 180);
+      doc.text(cookieLines, 14, y);
+
+      doc.save('scan-report.pdf');
+    });
+  </script>
+</body>
+</html>
