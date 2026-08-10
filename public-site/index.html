@@ -6,22 +6,84 @@
   <title>Cookie Compliance Scanner</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body { font-family: -apple-system, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
-    input { width: 70%; padding: 8px; font-size: 14px; }
-    button { padding: 8px 16px; font-size: 14px; cursor: pointer; }
-    #status { margin-top: 12px; color: #666; }
-    #results { margin-top: 24px; display: none; }
-    .risk-high { color: #c0392b; font-weight: bold; }
-    .risk-medium { color: #d68910; font-weight: bold; }
-    .risk-none { color: #27ae60; font-weight: bold; }
-    .risk-unknown { color: #7f8c8d; font-weight: bold; }
-    .finding { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
+    :root {
+      --bg: #0a0a1a;
+      --bg-panel: #14142b;
+      --accent: #8b5cf6;
+      --accent-light: #a78bfa;
+      --text: #f5f5f7;
+      --text-dim: #b3b3c6;
+      --border: #2a2a45;
+    }
+    body {
+      font-family: -apple-system, sans-serif;
+      max-width: 700px;
+      margin: 60px auto;
+      padding: 0 20px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    h1 { font-size: 32px; font-weight: 800; }
+    h1 .accent { color: var(--accent-light); }
+    p { color: var(--text-dim); }
+    input {
+      width: 65%;
+      padding: 12px 16px;
+      font-size: 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+    }
+    input::placeholder { color: var(--text-dim); }
+    input:focus { outline: none; border-color: var(--accent); }
+    button {
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #ffffff;
+      color: #0a0a1a;
+      border: none;
+      border-radius: 999px;
+    }
+    button:hover { background: var(--accent-light); color: #fff; }
+    #status { margin-top: 12px; color: var(--text-dim); }
+    #results {
+      margin-top: 28px;
+      display: none;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    #results h2 { color: var(--accent-light); }
+    #results h3 { color: var(--text); margin-top: 20px; }
+    .risk-high { color: #ff6b6b; font-weight: bold; }
+    .risk-medium { color: #ffd166; font-weight: bold; }
+    .risk-none { color: #6ee7b7; font-weight: bold; }
+    .risk-unknown { color: var(--text-dim); font-weight: bold; }
+    .finding {
+      border: 1px solid var(--border);
+      background: #1a1a35;
+      padding: 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      color: var(--text);
+    }
     #downloadButtons { margin-top: 16px; display: none; }
-    #downloadButtons button { margin-right: 8px; }
+    #downloadButtons button {
+      margin-right: 8px;
+      background: transparent;
+      color: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+    }
+    #downloadButtons button:hover { background: var(--accent); color: #fff; }
   </style>
 </head>
 <body>
-  <h1>Cookie Compliance Scanner</h1>
+  <h1>Cookie Compliance <span class="accent">Scanner</span></h1>
   <p>Enter a URL to scan for trackers firing before consent.</p>
 
   <input type="text" id="urlInput" placeholder="https://example.com" />
