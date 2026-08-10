@@ -8,7 +8,7 @@ async function inspect(url) {
   page.on('pageerror', (err) => console.log('PAGE ERROR:', err.message));
 
   console.log(`Navigating to ${url}...`);
-  const response = await page.goto(url, { waitUntil: 'networkidle' });
+  const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   console.log('HTTP status:', response ? response.status() : 'no response object');
   console.log('Final URL after navigation:', page.url());

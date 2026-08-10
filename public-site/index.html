@@ -13,6 +13,7 @@
     .risk-high { color: #c0392b; font-weight: bold; }
     .risk-medium { color: #d68910; font-weight: bold; }
     .risk-none { color: #27ae60; font-weight: bold; }
+    .risk-unknown { color: #7f8c8d; font-weight: bold; }
     .finding { border: 1px solid #ddd; padding: 10px; margin-bottom: 8px; border-radius: 4px; }
     #downloadButtons { margin-top: 16px; display: none; }
     #downloadButtons button { margin-right: 8px; }
@@ -33,6 +34,7 @@
     <p><strong>Consent mechanism found:</strong> <span id="resultConsent"></span></p>
     <p><strong>Risk level:</strong> <span id="resultRisk"></span></p>
     <div id="consentWarning" style="display:none; background:#fff3cd; border:1px solid #ffc107; padding:10px; border-radius:4px; margin-top:8px; font-size:13px;"></div>
+    <div id="blockedWarning" style="display:none; background:#f8d7da; border:1px solid #dc3545; padding:10px; border-radius:4px; margin-top:8px; font-size:13px;"></div>
 
     <h3>Findings</h3>
     <div id="findingsList"></div>
@@ -61,7 +63,7 @@
       results.style.display = 'none';
 
       try {
-        const response = await fetch('http://localhost:4000/api/scan', {
+        const response = await fetch('/api/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url }),
@@ -99,6 +101,14 @@
         warningEl.style.display = 'none';
       }
 
+      const blockedEl = document.getElementById('blockedWarning');
+      if (data.likelyBlocked) {
+        blockedEl.textContent = 'This scan may have been blocked (HTTP ' + data.httpStatus + '). The site likely uses bot protection that prevented the scanner from seeing the real page. Results below should not be treated as reliable.';
+        blockedEl.style.display = 'block';
+      } else {
+        blockedEl.style.display = 'none';
+      }
+
       const findingsList = document.getElementById('findingsList');
       findingsList.innerHTML = '';
 
@@ -121,6 +131,9 @@
       if (!lastScanResult) return;
 
       let csv = '';
+      if (lastScanResult.likelyBlocked) {
+        csv += 'WARNING: Scan may have been blocked (HTTP ' + lastScanResult.httpStatus + '). Bot protection likely prevented the scanner from seeing the real page. Results below should not be treated as reliable.\n\n';
+      }
       if (lastScanResult.consentNote) {
         csv += 'Note: ' + lastScanResult.consentNote.replace(/,/g, ';') + '\n\n';
       }
@@ -172,6 +185,15 @@
       y += 7;
       doc.text('Risk level: ' + data.summary.riskLevel.toUpperCase(), 14, y);
       y += 8;
+
+      if (data.likelyBlocked) {
+        doc.setFontSize(9);
+        doc.setTextColor(180, 0, 0);
+        const blockedLines = doc.splitTextToSize('WARNING: Scan may have been blocked (HTTP ' + data.httpStatus + '). Bot protection likely prevented the scanner from seeing the real page. Results below should not be treated as reliable.', 180);
+        doc.text(blockedLines, 14, y);
+        y += (blockedLines.length * 5) + 6;
+        doc.setTextColor(0);
+      }
 
       if (data.consentNote) {
         doc.setFontSize(9);

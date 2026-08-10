@@ -67,7 +67,8 @@ function classifyDomain(domain, lookup) {
   return null;
 }
 
-function computeRiskLevel(findings, consentFound) {
+function computeRiskLevel(findings, consentFound, likelyBlocked) {
+  if (likelyBlocked) return 'unknown';
   if (findings.length === 0) return 'none';
   if (!consentFound) return 'high';
   return 'medium';
@@ -84,7 +85,9 @@ async function scanPage(url) {
     requests.push({ url: req.url(), resourceType: req.resourceType(), timestamp: Date.now() });
   });
 
-  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const httpStatus = response ? response.status() : null;
+  const likelyBlocked = httpStatus === 403 || httpStatus === 429 || httpStatus === 503;
   await page.waitForTimeout(2000);
 
   const cookiesBefore = await context.cookies();
@@ -135,6 +138,8 @@ async function scanPage(url) {
   const result = {
     url,
     scannedAt: new Date().toISOString(),
+    httpStatus,
+    likelyBlocked,
     consentMechanism,
     consentNote,
     findings,
@@ -143,7 +148,7 @@ async function scanPage(url) {
     summary: {
       totalFindings: findings.length,
       hasConsentMechanism: consentMechanism.found,
-      riskLevel: computeRiskLevel(findings, consentMechanism.found),
+      riskLevel: computeRiskLevel(findings, consentMechanism.found, likelyBlocked),
     },
   };
 
