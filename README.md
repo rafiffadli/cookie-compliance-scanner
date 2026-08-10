@@ -2,6 +2,8 @@
 
 Automated tool that detects trackers firing before a user gives cookie consent.
 
+**Live demo:** https://cookiescanner.rafifmtt.my
+
 ## How it works
 
 ### 1. Page load and network capture
