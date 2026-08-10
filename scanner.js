@@ -88,7 +88,7 @@ async function scanPage(url) {
   const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   const httpStatus = response ? response.status() : null;
   const likelyBlocked = httpStatus === 403 || httpStatus === 429 || httpStatus === 503;
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(5000);
 
   const cookiesBefore = await context.cookies();
   const requestsBefore = [...requests];
