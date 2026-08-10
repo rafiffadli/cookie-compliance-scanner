@@ -102,6 +102,9 @@
     <h3>Findings</h3>
     <div id="findingsList"></div>
 
+    <h3>All Cookies on This Page (<span id="cookieCount"></span>)</h3>
+    <div id="allCookiesList"></div>
+
     <div id="downloadButtons">
       <button id="downloadCsv">Download CSV</button>
       <button id="downloadJson">Download JSON</button>
@@ -186,6 +189,23 @@
         });
       }
 
+      const cookieCountEl = document.getElementById('cookieCount');
+      const allCookiesList = document.getElementById('allCookiesList');
+      allCookiesList.innerHTML = '';
+      cookieCountEl.textContent = data.allCookies.length;
+
+      if (data.allCookies.length === 0) {
+        allCookiesList.innerHTML = '<p>No cookies detected on this page.</p>';
+      } else {
+        data.allCookies.forEach((c) => {
+          const div = document.createElement('div');
+          div.className = 'finding';
+          const flags = [c.httpOnly ? 'HttpOnly' : null, c.secure ? 'Secure' : null, c.sameSite].filter(Boolean).join(', ');
+          div.innerHTML = '<strong>' + c.name + '</strong> — domain: ' + c.domain + ' — path: ' + c.path + (flags ? ' — ' + flags : '');
+          allCookiesList.appendChild(div);
+        });
+      }
+
       document.getElementById('results').style.display = 'block';
       document.getElementById('downloadButtons').style.display = 'block';
     }
@@ -203,6 +223,11 @@
       csv += 'Domain,Company,Category,RequestCount,FiredBeforeConsent\n';
       lastScanResult.findings.forEach((f) => {
         csv += `${f.domain},${f.company},${f.category},${f.requestCount},${f.firedBeforeConsent}\n`;
+      });
+
+      csv += '\nCookieName,Domain,Path,HttpOnly,Secure,SameSite\n';
+      lastScanResult.allCookies.forEach((c) => {
+        csv += `${c.name},${c.domain},${c.path},${c.httpOnly},${c.secure},${c.sameSite}\n`;
       });
 
       downloadFile(csv, 'scan-report.csv', 'text/csv');
@@ -296,6 +321,19 @@
       const cookieLines = doc.splitTextToSize(cookieText, 180);
       doc.text(cookieLines, 14, y);
 
+
+      y += (cookieLines.length * 5) + 10;
+      if (y > 260) { doc.addPage(); y = 20; }
+      doc.setFontSize(14);
+      doc.text("All Cookies on This Page (" + data.allCookies.length + ")", 14, y);
+      y += 8;
+      doc.setFontSize(9);
+      data.allCookies.forEach((c) => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        const flags = [c.httpOnly ? "HttpOnly" : null, c.secure ? "Secure" : null, c.sameSite].filter(Boolean).join(", ");
+        doc.text(c.name + " - " + c.domain + c.path + (flags ? " (" + flags + ")" : ""), 14, y);
+        y += 5;
+      });
       doc.save('scan-report.pdf');
     });
   </script>

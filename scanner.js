@@ -143,10 +143,12 @@ async function scanPage(url) {
     consentMechanism,
     consentNote,
     findings,
+    allCookies: cookiesAfter.map(c => ({ name: c.name, domain: c.domain, path: c.path, expires: c.expires, httpOnly: c.httpOnly, secure: c.secure, sameSite: c.sameSite })),
     preConsentCookies: cookiesBefore.map((c) => c.name),
     newCookiesAfterConsent,
     summary: {
       totalFindings: findings.length,
+      totalCookies: cookiesAfter.length,
       hasConsentMechanism: consentMechanism.found,
       riskLevel: computeRiskLevel(findings, consentMechanism.found, likelyBlocked),
     },
