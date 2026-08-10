@@ -83,18 +83,14 @@ async function scanPage(url) {
   const requests = [];
   page.on('request', (req) => {
     requests.push({ url: req.url(), resourceType: req.resourceType(), timestamp: Date.now() });
-    if (req.url().includes("google-analytics")) { console.log("[TIMING] GA request seen:", Date.now(), req.url()); }
   });
 
   const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  console.log("[TIMING] goto resolved:", Date.now());
   const httpStatus = response ? response.status() : null;
   const likelyBlocked = httpStatus === 403 || httpStatus === 429 || httpStatus === 503;
-  console.log("[TIMING] starting wait:", Date.now());
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(10000);
 
   const cookiesBefore = await context.cookies();
-  console.log("[TIMING] cookiesBefore captured:", Date.now(), "count:", cookiesBefore.length, "names:", cookiesBefore.map(c => c.name));
   const requestsBefore = [...requests];
 
   const consentResult = await findConsentButton(page);
