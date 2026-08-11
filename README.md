@@ -22,7 +22,7 @@ This is the "before consent" baseline — anything present here fired without th
 
 The scanner tries to find and click the site's cookie-consent "Accept" button, using two strategies in order:
 
-- **Known selectors** — a list of documented CSS selectors from major consent-management platforms (OneTrust, Cookiebot, Osano, Quantcast, Termly). Tried first because these are unambiguous, low-risk matches.
+- **Known selectors** — a list of documented CSS selectors covering 18 major consent-management platforms (OneTrust, Cookiebot, CookieYes, Osano, Quantcast, Termly, Didomi, TrustArc, iubenda, Complianz, Klaro, Cookie Control, CookieScript, and others). Tried first because these are unambiguous, low-risk matches.
 - **Text-pattern fallback** — if no known selector matches, the scanner scans all visible buttons/links on the page and checks their text against common accept-button phrasing ("Accept", "Accept All", "I Agree", "Allow All", "Got It"). Used only as a fallback, since text matching carries more risk of clicking the wrong element.
 
 If a button is found and clicked, the scanner waits again, then takes a second, "after consent" snapshot of cookies for comparison.
@@ -53,6 +53,14 @@ This JSON is:
 - Returned directly by the backend API (`POST /api/scan`)
 - Rendered into the browser UI
 - Exportable as CSV, JSON, or PDF from the frontend
+
+## Known Limitations
+
+- **Custom, in-house consent banners are never detected.** Selector- and text-based matching only works against known commercial CMPs. A bespoke banner (e.g. BBC's own `ckns_*` cookie system) has no reusable signature to match against, no matter how many selectors are added. A "no consent mechanism found" result should always be manually verified, not treated as a confirmed finding.
+- **Shadow DOM and iframe-rendered consent banners are structurally invisible to this scanner.** Some CMPs (certain Usercentrics, Sourcepoint, and TrustArc configurations) render their UI inside a Shadow DOM or a same-/cross-origin iframe. A plain `document.querySelector` cannot see into either, regardless of selector accuracy -- this would require a fundamentally different technical approach (piercing shadow roots, switching iframe execution context).
+- **CMP markup changes over time.** Selectors reflect commonly documented patterns at the time they were written, not a live-verified guarantee. Vendors update their markup (e.g. Cookiebot's 2025 pricing/product changes and migration to Usercentrics Web CMP), which can silently break a previously-working selector.
+- **Single-page scope only.** The scanner analyzes exactly the URL provided -- it does not crawl or follow links. A tracker or cookie that only loads on a different page of the same site will not appear in the report.
+
 
 ## Architecture
 public.html → fetch() → server.js (Express) → scanner.js (Playwright + classification)
