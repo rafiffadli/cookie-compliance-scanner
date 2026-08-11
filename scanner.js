@@ -11,22 +11,46 @@ const COMPLIANCE_RELEVANT_CATEGORIES = [
   'EmailAggressive',
 ];
 
+// Known CSS selectors for major commercial consent-management platforms (CMPs).
+// NOTE: this cannot detect CMPs that render inside Shadow DOM or iframes
+// (e.g. some Usercentrics/Sourcepoint/TrustArc setups) -- those require a
+// different technical approach entirely, not just more selectors.
+// NOTE: custom, in-house-built consent banners (e.g. BBC's own system) are
+// never covered by this list -- there is no selector for bespoke code.
 const KNOWN_CMP_SELECTORS = [
-  '#onetrust-accept-btn-handler',
-  '.cky-btn-accept',
-  '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
-  '.osano-cm-accept-all',
-  '#qc-cmp2-ui button[mode="primary"]',
-  '.termly-accept-btn',
+  '#onetrust-accept-btn-handler',               // OneTrust
+  '.cky-btn-accept',                             // CookieYes
+  '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll', // Cookiebot
+  '.CybotCookiebotDialogBodyButton',             // Cookiebot (alt)
+  '.osano-cm-accept-all',                        // Osano
+  '#qc-cmp2-ui button[mode="primary"]',          // Quantcast Choice
+  '.termly-accept-btn',                          // Termly
+  '#didomi-notice-agree-button',                 // Didomi
+  '#truste-consent-button',                      // TrustArc
+  '.iubenda-cs-accept-btn',                      // iubenda
+  '.cmplz-btn.cmplz-accept',                     // Complianz
+  '.cn-accept',                                  // Klaro
+  '.cm-btn-success',                             // Klaro (alt)
+  '#ccc-notify-accept',                          // Cookie Control (Civic UK)
+  '.ccc-accept',                                 // Cookie Control (alt)
+  '#cookiescript_accept',                        // CookieScript
+  '.cc-btn.cc-allow',                            // Cookieconsent (Insites/vanilla)
+  '#cookie-law-info-bar .cli_action_button',     // Cookie Law Info (WordPress)
 ];
 
 const ACCEPT_TEXT_PATTERNS = [
   /^accept all$/i,
+  /^accept all cookies$/i,
   /^accept cookies$/i,
   /^accept$/i,
   /^i agree$/i,
+  /^agree$/i,
   /^allow all$/i,
+  /^allow all cookies$/i,
+  /^allow cookies$/i,
   /^got it$/i,
+  /^i understand$/i,
+  /^ok, got it$/i,
 ];
 
 async function findConsentButton(page) {
